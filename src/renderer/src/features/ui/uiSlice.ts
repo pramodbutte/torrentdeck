@@ -13,6 +13,7 @@
  */
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { TorrentFilePayload } from '@shared/types'
+import { dedupeMagnets, isMagnet, magnetInfohash } from '@shared/magnet'
 
 export interface Selection {
   profileId: string
@@ -21,7 +22,12 @@ export interface Selection {
 }
 
 export interface AddTorrentPayload {
+  /** Empty string = opened manually (prefill from clipboard); a `magnet:` URI
+   *  = opened for that link. Callers keep passing one magnet; the reducer folds
+   *  it into `magnets` and accumulates when the dialog is already open. */
   magnet?: string
+  /** Accumulated magnet links (deduped by infohash) for a batch add. */
+  magnets?: string[]
   files?: TorrentFilePayload[]
 }
 
@@ -113,10 +119,36 @@ const uiSlice = createSlice({
       state.detailTab = action.payload
     },
     openAddTorrent(state, action: PayloadAction<AddTorrentPayload>) {
-      state.addTorrent = action.payload
+      const p = action.payload
+      const incoming = p.magnet && isMagnet(p.magnet) ? p.magnet : null
+      // A real magnet arriving while the dialog is already open accumulates
+      // (clipboard/OS handoff), rather than clobbering an in-progress add.
+      if (incoming && state.addTorrent) {
+        const existing = state.addTorrent.magnets ?? []
+        state.addTorrent.magnets = dedupeMagnets([...existing, incoming])
+        return
+      }
+      state.addTorrent = incoming ? { magnets: [incoming] } : p
     },
     closeAddTorrent(state) {
       state.addTorrent = null
+    },
+    /** Append magnets to the open Add dialog's batch (manual paste/type),
+     *  deduped by infohash. No-op if the dialog isn't open. */
+    addMagnets(state, action: PayloadAction<string[]>) {
+      if (!state.addTorrent) return
+      const existing = state.addTorrent.magnets ?? []
+      state.addTorrent.magnets = dedupeMagnets([
+        ...existing,
+        ...action.payload.filter((m) => isMagnet(m))
+      ])
+    },
+    /** Remove one magnet from the batch by infohash (or exact string). */
+    removeMagnet(state, action: PayloadAction<string>) {
+      const list = state.addTorrent?.magnets
+      if (!list) return
+      const key = magnetInfohash(action.payload) ?? action.payload.trim()
+      state.addTorrent!.magnets = list.filter((m) => (magnetInfohash(m) ?? m.trim()) !== key)
     },
     openProfileEditor(state, action: PayloadAction<string | null>) {
       state.profileEditorId = action.payload
@@ -178,6 +210,8 @@ export const {
   setDetailTab,
   openAddTorrent,
   closeAddTorrent,
+  addMagnets,
+  removeMagnet,
   openProfileEditor,
   closeProfileEditor,
   openRemoveConfirm,

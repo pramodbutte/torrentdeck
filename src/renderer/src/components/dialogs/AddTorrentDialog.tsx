@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TorrentFilePayload } from '@shared/types'
 import { MB, unwantedBySizeThreshold } from '@shared/sizeFilter'
+import { extractMagnets, isMagnet, magnetInfohash, magnetLabel } from '@shared/magnet'
 import { useAppDispatch, useAppSelector, useFirstProfileId } from '@/app/hooks'
-import { closeAddTorrent } from '@/features/ui/uiSlice'
+import { addMagnets, closeAddTorrent, removeMagnet } from '@/features/ui/uiSlice'
 import { useAddTorrentMutation, useFreeSpaceQuery, useGetSessionQuery } from '@/services/rpcApi'
 import { parseTorrentPreview } from '@shared/bencode'
 import { formatBytes } from '@/lib/format'
@@ -43,7 +44,10 @@ export function AddTorrentDialog(): React.JSX.Element | null {
 
   const [mode, setMode] = useState<'magnet' | 'file'>('magnet')
   const [pickedFiles, setPickedFiles] = useState<TorrentFilePayload[] | null>(null)
-  const [magnet, setMagnet] = useState('')
+  const [draftMagnet, setDraftMagnet] = useState('')
+  /** Per-magnet outcome after a batch add, keyed by infohash (or raw string). */
+  const [results, setResults] = useState<Record<string, 'ok' | 'dup' | 'fail'>>({})
+  const [batchSummary, setBatchSummary] = useState<string | null>(null)
   const [dir, setDir] = useState('')
   const [labels, setLabels] = useState('')
   const [paused, setPaused] = useState(false)
@@ -57,7 +61,17 @@ export function AddTorrentDialog(): React.JSX.Element | null {
 
   const open = payload !== null
   const files = pickedFiles ?? payload?.files ?? NO_FILES
+  const magnets = payload?.magnets ?? []
   const isMagnetMode = mode === 'magnet'
+  const magnetKey = (m: string): string => magnetInfohash(m) ?? m.trim()
+
+  const commitDraft = (): void => {
+    const found = extractMagnets(draftMagnet)
+    if (found.length) {
+      dispatch(addMagnets(found))
+      setDraftMagnet('')
+    }
+  }
 
   const preview = useMemo(
     () => (files.length === 1 ? parseTorrentPreview(files[0].base64) : null),
@@ -77,8 +91,12 @@ export function AddTorrentDialog(): React.JSX.Element | null {
     }
   }
 
+  // Reset the form only on the closed→open transition. While the dialog stays
+  // open, accumulating magnets (clipboard/OS handoff) changes `payload` but must
+  // NOT wipe what the user has typed — so guard on the open edge, not payload.
+  const wasOpen = useRef(false)
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpen.current) {
       // Default to the last server added to (if it still exists), else the current server.
       const last = localStorage.getItem(LAST_ADD_KEY)
       const chosen =
@@ -87,7 +105,9 @@ export function AddTorrentDialog(): React.JSX.Element | null {
       else setProfileId(null)
       setMode(payload?.files?.length ? 'file' : 'magnet')
       setPickedFiles(null)
-      setMagnet(payload?.magnet ?? '')
+      setDraftMagnet('')
+      setResults({})
+      setBatchSummary(null)
       setLabels('')
       setPaused(false)
       setSequential(false)
@@ -96,13 +116,15 @@ export function AddTorrentDialog(): React.JSX.Element | null {
       setUnwanted(new Set())
       setThresholdMB(0)
       setError(null)
-      // Convenience: a magnet link sitting in the clipboard prefills the field
-      if (payload?.magnet === '') {
+      // Manual open with an empty magnet: seed the batch from a magnet already
+      // sitting on the clipboard.
+      if (payload?.magnet === '' && !payload?.magnets?.length) {
         void window.api.readClipboardText().then((text) => {
-          if (text.trim().startsWith('magnet:')) setMagnet(text.trim())
+          if (isMagnet(text)) dispatch(addMagnets([text.trim()]))
         })
       }
     }
+    wasOpen.current = open
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, payload])
 
@@ -186,6 +208,7 @@ export function AddTorrentDialog(): React.JSX.Element | null {
 
   const submit = async (): Promise<void> => {
     setError(null)
+    setBatchSummary(null)
     if (profileId) {
       localStorage.setItem(LAST_ADD_KEY, profileId)
       if (rememberDir && dir) localStorage.setItem(rememberDirKey(profileId), dir)
@@ -204,29 +227,61 @@ export function AddTorrentDialog(): React.JSX.Element | null {
       addToTopOfQueue: topOfQueue || undefined,
       skipHashCheck: skipHash || undefined
     }
-    try {
-      if (isMagnetMode) {
-        if (!magnet.trim().startsWith('magnet:')) {
-          setError('Enter a magnet link starting with magnet:')
-          return
-        }
-        const res = await addTorrent({ ...common, magnet: magnet.trim() }).unwrap()
-        if (res.duplicate) setError('That torrent is already on the server')
-        else close()
-      } else {
-        if (!files.length) {
-          setError('Choose a .torrent file')
-          return
-        }
-        for (const f of files) {
-          await addTorrent({
-            ...common,
-            metainfoBase64: f.base64,
-            unwantedIndices: files.length === 1 ? [...unwanted] : undefined
-          }).unwrap()
-        }
-        close()
+    if (isMagnetMode) {
+      // Batch: add every collected magnet, never aborting on one failure or
+      // duplicate. Tally outcomes, drop the ones that landed, and keep the rest
+      // visible (marked) so the user sees what didn't take.
+      if (!magnets.length) {
+        setError('Add at least one magnet link')
+        return
       }
+      const outcome: Record<string, 'ok' | 'dup' | 'fail'> = {}
+      let added = 0
+      let dup = 0
+      let failed = 0
+      for (const m of magnets) {
+        const key = magnetKey(m)
+        try {
+          const res = await addTorrent({ ...common, magnet: m }).unwrap()
+          if (res.duplicate) {
+            outcome[key] = 'dup'
+            dup++
+          } else {
+            outcome[key] = 'ok'
+            added++
+          }
+        } catch {
+          outcome[key] = 'fail'
+          failed++
+        }
+      }
+      setResults(outcome)
+      if (dup === 0 && failed === 0) {
+        close()
+        return
+      }
+      // Clear the successes; leave duplicates/failures for another try.
+      for (const m of magnets) if (outcome[magnetKey(m)] === 'ok') dispatch(removeMagnet(m))
+      setBatchSummary(
+        [added && `${added} added`, dup && `${dup} already on server`, failed && `${failed} failed`]
+          .filter(Boolean)
+          .join(' · ')
+      )
+      return
+    }
+    try {
+      if (!files.length) {
+        setError('Choose a .torrent file')
+        return
+      }
+      for (const f of files) {
+        await addTorrent({
+          ...common,
+          metainfoBase64: f.base64,
+          unwantedIndices: files.length === 1 ? [...unwanted] : undefined
+        }).unwrap()
+      }
+      close()
     } catch (e) {
       setError((e as { message?: string })?.message ?? 'Adding the torrent failed')
     }
@@ -259,7 +314,7 @@ export function AddTorrentDialog(): React.JSX.Element | null {
               onClick={() => setMode('magnet')}
               className={`rounded px-3 py-1 ${isMagnetMode ? 'bg-accent-500 text-white' : 'text-surface-600 dark:text-surface-300'}`}
             >
-              Magnet link
+              Magnet link{!isMagnetMode && magnets.length > 0 ? ` (${magnets.length})` : ''}
             </button>
             <button
               type="button"
@@ -272,14 +327,62 @@ export function AddTorrentDialog(): React.JSX.Element | null {
 
           {isMagnetMode ? (
             <>
-              <Field label="Magnet link">
+              <Field label={magnets.length > 1 ? `Magnet links (${magnets.length})` : 'Magnet link'}>
                 <Input
-                  value={magnet}
-                  onChange={(e) => setMagnet(e.target.value)}
-                  placeholder="magnet:?xt=urn:btih:…"
+                  value={draftMagnet}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    // A paste that carries whitespace (multi-line / trailing) is
+                    // split into rows immediately; otherwise keep typing.
+                    if (/\s/.test(v) && extractMagnets(v).length) {
+                      dispatch(addMagnets(extractMagnets(v)))
+                      setDraftMagnet('')
+                    } else setDraftMagnet(v)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      commitDraft()
+                    }
+                  }}
+                  onBlur={commitDraft}
+                  placeholder="Paste magnet:?xt=urn:btih:… (add several)"
                   autoFocus
                 />
               </Field>
+              {magnets.length > 0 && (
+                <ul className="max-h-40 space-y-1 overflow-y-auto rounded border border-surface-200 p-1 dark:border-surface-700">
+                  {magnets.map((m) => {
+                    const status = results[magnetKey(m)]
+                    return (
+                      <li
+                        key={magnetKey(m)}
+                        className="flex items-center gap-2 rounded px-2 py-1 text-xs hover:bg-surface-100 dark:hover:bg-surface-800"
+                      >
+                        <span className="min-w-0 flex-1 truncate" title={m}>
+                          {magnetLabel(m)}
+                        </span>
+                        {status === 'dup' && (
+                          <span className="shrink-0 text-amber-600 dark:text-amber-400">
+                            already added
+                          </span>
+                        )}
+                        {status === 'fail' && (
+                          <span className="shrink-0 text-danger-600 dark:text-danger-400">failed</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => dispatch(removeMagnet(m))}
+                          aria-label="Remove magnet"
+                          className="shrink-0 rounded px-1 text-surface-400 hover:text-danger-600 dark:hover:text-danger-400"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
               {serverThresholdMB > 0 && (
                 <p className="text-xs text-surface-500">
                   This server&apos;s Size Filter ({serverThresholdMB} MB) will skip small files
@@ -402,6 +505,9 @@ export function AddTorrentDialog(): React.JSX.Element | null {
           />
 
           {error && <p className="text-xs text-danger-600 dark:text-danger-400">{error}</p>}
+          {batchSummary && (
+            <p className="text-xs text-surface-500 dark:text-surface-400">{batchSummary}</p>
+          )}
 
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="secondary" onClick={close}>
@@ -409,9 +515,13 @@ export function AddTorrentDialog(): React.JSX.Element | null {
             </Button>
             <Button
               onClick={() => void submit()}
-              disabled={adding || (isMagnetMode ? !magnet.trim() : files.length === 0)}
+              disabled={adding || (isMagnetMode ? magnets.length === 0 : files.length === 0)}
             >
-              {adding ? 'Adding…' : 'Add torrent'}
+              {adding
+                ? 'Adding…'
+                : isMagnetMode && magnets.length > 1
+                  ? `Add ${magnets.length} torrents`
+                  : 'Add torrent'}
             </Button>
           </div>
         </div>
