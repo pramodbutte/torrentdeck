@@ -1,7 +1,7 @@
 {
   "name": "torrentdeck",
   "productName": "TorrentDeck",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "type": "module",
   "description": "A modern cross-platform remote dashboard for Transmission and Deluge BitTorrent daemons",
   "main": "./out/main/index.js",
