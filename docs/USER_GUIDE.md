@@ -182,8 +182,10 @@ Use the **Add** button (▾ for options), drag a `.torrent` file onto the window
 - **Add to server** — choose which server receives the torrent. Your last choice is
   remembered.
 - **Magnet link / .torrent file** — a toggle at the top of the dialog. In **Magnet** mode,
-  paste a link (the clipboard is auto-detected); in **.torrent** mode, click **Choose
-  .torrent…** or drag a file onto the window.
+  paste a link (the clipboard is auto-detected) — or paste/copy **several**: each magnet
+  becomes a row (labelled by its name, with a ✕ to drop it), and they're all added together
+  to the chosen server. In **.torrent** mode, click **Choose .torrent…** or drag a file onto
+  the window.
 - **Destination folder** — defaults to the server's download folder; free space is shown.
 - **Labels** — optional, comma-separated (Transmission and qBittorrent, where they're
   tags; Deluge if its Label plugin is on).
@@ -215,6 +217,14 @@ download.
 In **Preferences**, enable **Watch the clipboard for magnet links**: while the app is open,
 copying a `magnet:` link opens the prefilled Add dialog automatically. It's off by default
 (it reads clipboard text while running).
+
+Copy several links in a row without waiting: each new magnet is **added to the open dialog's
+list** (deduped) rather than replacing the last, so you can collect a batch and add them all
+at once. The same applies to clicking multiple `magnet:` links in your browser.
+
+When a batch is added, any that are already on the server or fail are left in the list and
+marked, with a short summary (e.g. *"3 added · 1 already on server"*); the dialog closes on
+its own only when every link succeeded.
 
 ---
 

@@ -93,7 +93,8 @@ capabilities and unsupported controls are hidden per profile.
   torrent's Files tab
 - **Watch folders**: a per-server folder the app scans while open, auto-adding dropped
   `.torrent` files (works with remote daemons)
-- **Clipboard magnet watcher** (opt-in) — offers to add a magnet link as soon as you copy it
+- **Clipboard magnet watcher** (opt-in) — offers to add a magnet link as soon as you copy
+  it; copy several in a row and they collect into one batch add (deduped)
 - OS integration: registers as handler for `magnet:` links and `.torrent` files; system
   tray with live speeds and close-to-tray; download-complete notifications
 - Detail panel: general info, files as a collapsible tree with per-file wanted/priority,
