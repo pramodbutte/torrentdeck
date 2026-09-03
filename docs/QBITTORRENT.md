@@ -64,6 +64,7 @@ see dead buttons:
 | **Blocklist** (enable / URL / update) | Managed in qBittorrent's own options; not wired in v1. |
 | **Per-piece availability overlay** | qBittorrent exposes no per-piece availability (see Degraded). |
 | **Port test** | Not wired in v1. |
+| **Find data** (re-point at existing files without moving) | `/torrents/setLocation` always moves the files. **Move** is offered. |
 
 ## Attempting an unsupported action
 

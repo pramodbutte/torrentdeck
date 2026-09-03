@@ -137,3 +137,9 @@ An app update that has been downloaded and verified in the background and is rea
 install. It is applied only when the user explicitly chooses to install it — quitting or
 restarting the app never applies it. Its presence is signaled quietly: a one-time
 notification per version and a persistent badge; the user may defer indefinitely.
+
+### Find Data
+Re-pointing a Torrent at files that already exist at another path, without moving them,
+followed by a verify. Transmission only (its set-location call can skip the move); the fix
+for a Torrent reporting "No data found" after a drive was unmounted or a folder moved.
+Distinct from **Move**, which relocates the files.

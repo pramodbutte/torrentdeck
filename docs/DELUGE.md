@@ -67,6 +67,7 @@ dead buttons:
 | **Per-piece availability overlay** | Deluge exposes no per-piece data (see Degraded). |
 | **Path rename** (rename file/folder within a torrent) | Deluge renames by file index, not path; not exposed in v1. |
 | **Port test** | Not wired in v1. |
+| **Find data** (re-point at existing files without moving) | `core.move_storage` always moves; Deluge has no set-location-only call. **Move** is offered. |
 
 Additional behavioral limits:
 

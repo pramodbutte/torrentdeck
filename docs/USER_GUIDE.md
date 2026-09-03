@@ -243,6 +243,11 @@ server (a selection never spans servers). Selecting drives the detail panels.
 - **Queue**: move to top / up / down / bottom, or set an exact position
 - Remove… (optionally deleting local data)
 
+Actions go straight to the server and the row updates on the next poll — there is no
+"done" message. If the server **rejects** an action, a small notice appears above the
+status bar saying what failed, on which server, and why; it fades on its own. Hover a
+torrent's **status** to read a long error message in full.
+
 **Filter, search, sort** — each Torrents panel has its own filter bar: filter by status,
 tracker, or label, type in **Search**, and click a column header (table view) or the
 **sort** control to reorder. Switch between **cards** and **table** views with the view
@@ -271,7 +276,11 @@ Select a torrent to populate the **Torrent detail** panel. Its tabs:
 
 - **General** — status, sizes, ratio, dates, pieces summary, creator/comment, hash, and a
   **Speed & limits** section for per-torrent download/upload caps, seed-ratio, connection
-  limit, and (Transmission) priority, bandwidth group, and sequential download.
+  limit, and (Transmission) priority, bandwidth group, and sequential download. The
+  **Location** field relocates a torrent's data: **Move** moves the files to the new
+  folder; **Find data** (Transmission) points the torrent at files that are *already*
+  there without moving anything, then verifies them — the fix when a torrent reports
+  *"No data found"* because a drive was unmounted or a folder was moved.
 - **Files** — per-file sizes and progress in a collapsible tree; set file priorities or
   deselect files you don't want. A **"Skip files under" slider** at the top applies the
   Size Filter to *this* torrent retroactively: drag it to preview which files stay (the
@@ -346,7 +355,8 @@ The app hides controls a server doesn't support, so you only see what works. In 
 - **Privacy extras**: µTP (Transmission; build-dependent on Deluge) and anonymous mode
   (qBittorrent; build-dependent on Deluge) appear only where the daemon exposes them.
 - **Transmission only**: bandwidth groups, alternative-speed scheduler, blocklist, a port
-  test, and per-piece **availability** (how many peers have each piece).
+  test, **Find data** (re-point a torrent at existing files without moving them), and
+  per-piece **availability** (how many peers have each piece).
 - **Labels**: Transmission and qBittorrent allow **multiple** per torrent (qBittorrent
   calls them *tags*); Deluge needs its **Label plugin** and allows **one** per torrent.
 - **Deluge**: the pieces map shows overall progress only (no per-piece map).
@@ -409,5 +419,11 @@ Enable **close-to-tray** in Preferences to keep it running when you close the wi
   after several failed logins** (default: 1 hour). Fix the username/password, then wait for
   the ban to lapse or restart the qBittorrent daemon to clear it immediately. Also make
   sure the **Web UI is enabled** (Tools → Options → Web UI).
+- **Transmission: "No data found!"** — the daemon can't see the torrent's files (drive
+  unmounted, folder moved or deleted). On Transmission 4.0.x, **Verify local data does
+  nothing** in this state — the daemon skips the check while it sees no files (4.1 runs
+  it). If the files still exist, enter their folder in the detail panel's **Location**
+  field and click **Find data**, then start the torrent. If they're gone, remove the
+  torrent and re-add it to download again.
 - **A feature is missing** — it's likely hidden because the connected server doesn't
   support it (see [What each server supports](#what-each-server-supports)).

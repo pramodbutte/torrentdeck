@@ -64,6 +64,7 @@ Features a server doesn't support are hidden automatically per profile (see the 
 | Pieces map | ✓ *(+ per-piece availability)* | — *(progress only)* | ✓ *(have-state; no availability)* |
 | Per-tracker swarm scrape | ✓ | approximate *(swarm totals)* | ✓ |
 | Path rename | ✓ | — | ✓ |
+| Find data (re-point at existing files without moving) | ✓ | — | — |
 | Bandwidth groups | ✓ | — | — |
 | Alt-speed scheduler | ✓ | — | — |
 | Blocklist | ✓ | — | — |

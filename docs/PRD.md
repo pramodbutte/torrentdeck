@@ -89,6 +89,7 @@ Status reflects the current build.
 | L12 | Reorder table columns by dragging headers (order persisted per panel) | P2 | ✅ v0.6 |
 | L13 | Resize table column widths by dragging header borders (persisted per panel) | P2 | ✅ v0.6 |
 | L11 | Swarm health: best seeder/leecher counts with health tint, sortable table columns | P1 | ✅ v0.4 |
+| L14 | Action feedback, errors only: a rejected action shows a non-modal notice (what failed, on which server, the daemon's reason); successes stay silent. Status cells show the daemon's full error text on hover | P1 | ✅ v0.12 |
 
 ### 4.3 Adding torrents
 
@@ -108,7 +109,7 @@ Status reflects the current build.
 | D1 | Detail view with General / Files / Peers / Trackers tabs | P0 | ✅ |
 | D2 | Files: per-file wanted toggle and priority (high/normal/low) | P0 | ✅ |
 | D3 | Trackers: list with announce health, add and remove | P0 | ✅ |
-| D4 | Edit labels; move data to a new location | P0 | ✅ |
+| D4 | Edit labels; move data to a new location; **Find data** (Transmission: re-point at files already on disk without moving, then verify — the fix path for "No data found") | P0 | ✅ (Find data v0.12) |
 | D5 | Peers: address, client, progress, rates | P0 | ✅ |
 | D6 | Files tab renders as a collapsible directory tree with folder-level wanted/priority | P1 | ✅ v0.5 |
 | D7 | Per-torrent speed limits, seed-ratio override, bandwidth priority, peer limit | P1 | ✅ v0.5 |
@@ -147,7 +148,8 @@ Status reflects the current build.
   `table` format.
 - **Security:** see §3 goals; renderer has no network or Node access.
 - **Reliability:** RPC failures degrade to an inline error state with the cause;
-  polling resumes automatically when the daemon returns.
+  polling resumes automatically when the daemon returns. A rejected user action
+  surfaces as a non-modal notice with the daemon's reason (v0.12).
 - **Compatibility:** Transmission 4.0+ (RPC 17+), verified against 4.0.5 (user's NAS)
   and 4.1.3 (dev container); Deluge 2.x via its Web UI, verified against 2.2.0 (dev
   container). Per-server-type feature support is documented in [DELUGE.md](DELUGE.md)
@@ -200,6 +202,7 @@ Decision record: [ADR-0002](adr/0002-flexible-panel-workspace.md).
 | **0.9** ✅ | Download hygiene & automation: **Size Filter** (per-server, ADR-0005) with in-dialog slider, Deluge magnet prefetch, and a retroactive per-torrent slider in the Files tab (v0.1.5); **watch folders** (client-side per server, ADR-0006); **privacy & network** settings (DHT/PeX/LPD/µTP/anonymous); **extended seeding limits** (idle/total time, action on limit); **clipboard magnet watcher** (opt-in); **Shift-click** range selection; Add-dialog Magnet/File toggle |
 | **0.10** ✅ | Observability & QoL (shipped as app release v0.1.6): **peer country flags** via bundled offline GeoIP (DB-IP Lite); **Logs panel** (copy, reveal on disk) + version display; per-server **color override**; per-server **↓/↑ speeds and status breakdown** in group headers; **Pending Update** semantics — background download, explicit install only, never on quit; blocklist **default list** prefill |
 | **0.11** ✅ | Add-dialog **multi-magnet batch**: copied/handed-off magnets accumulate in one dialog (deduped by infohash) instead of clobbering; add-all-then-summarize with per-row status; recording-privacy **opaque redaction** of names (superseding blur) |
+| **0.12** ✅ | Action feedback & data recovery: **error-only action notice** (rejected mutations surface what/where/why; successes stay silent); daemon **error text on hover** in list cells; **Find data** in the detail Location field (Transmission set-location without move, then verify) — the fix path for *"No data found"*, where Transmission 4.0.x silently ignores a plain verify |
 | Future | rTorrent adapter (XML-RPC over /RPC2); Synology Download Station adapter (scoped — build gated on a live DSM to test against; reduced capabilities); qBittorrent categories; more per-daemon depth |
 | Post-1.0 | RSS feeds, completion scripts, web seeds in peers |
 
