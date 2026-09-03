@@ -5,6 +5,7 @@ import uiReducer from '@/features/ui/uiSlice'
 import workspaceReducer, { persistWorkspaceMiddleware } from '@/features/workspace/workspaceSlice'
 import speedHistoryReducer, { speedSamplerMiddleware } from '@/features/stats/speedHistorySlice'
 import { completionNotifierMiddleware } from '@/features/torrents/completions'
+import { actionErrorMiddleware } from '@/features/ui/actionErrors'
 
 export const store = configureStore({
   reducer: {
@@ -19,7 +20,8 @@ export const store = configureStore({
       .prepend(
         persistWorkspaceMiddleware.middleware,
         speedSamplerMiddleware.middleware,
-        completionNotifierMiddleware.middleware
+        completionNotifierMiddleware.middleware,
+        actionErrorMiddleware.middleware
       )
       .concat(rpcApi.middleware)
 })

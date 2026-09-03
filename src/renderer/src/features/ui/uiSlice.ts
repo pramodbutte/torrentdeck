@@ -9,7 +9,8 @@
  *
  * Dialog-state conventions: `addTorrent` null = closed; `profileEditorId`
  * undefined = closed, null = "create new", string = edit that profile;
- * `removeConfirm`/`labelsEditor` null = closed.
+ * `removeConfirm`/`labelsEditor` null = closed; `actionError` null = no failed
+ * action to report (see features/ui/actionErrors.ts).
  */
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { TorrentFilePayload } from '@shared/types'
@@ -40,6 +41,13 @@ export interface RenameTarget {
   currentName: string
 }
 
+/** A failed mutation to show in the action-error notice; a newer one replaces it. */
+export interface ActionError {
+  message: string
+  /** Epoch ms; distinguishes repeats of the same message so the notice re-arms. */
+  at: number
+}
+
 export interface UiState {
   selection: Selection | null
   detailTarget: { profileId: string; id: string } | null
@@ -57,6 +65,8 @@ export interface UiState {
   groupsOpen: boolean
   /** Version of a downloaded, ready-to-install update (null = none). */
   updateReadyVersion: string | null
+  /** Most recent failed action, shown by ActionErrorNotice (null = none). */
+  actionError: ActionError | null
 }
 
 const initialState: UiState = {
@@ -74,7 +84,8 @@ const initialState: UiState = {
   prefsOpen: false,
   shortcutsOpen: false,
   groupsOpen: false,
-  updateReadyVersion: null
+  updateReadyVersion: null,
+  actionError: null
 }
 
 const uiSlice = createSlice({
@@ -197,6 +208,12 @@ const uiSlice = createSlice({
     },
     setUpdateReady(state, action: PayloadAction<string>) {
       state.updateReadyVersion = action.payload
+    },
+    actionFailed(state, action: PayloadAction<ActionError>) {
+      state.actionError = action.payload
+    },
+    dismissActionError(state) {
+      state.actionError = null
     }
   }
 })
@@ -226,6 +243,8 @@ export const {
   setPrefsOpen,
   setShortcutsOpen,
   setGroupsOpen,
-  setUpdateReady
+  setUpdateReady,
+  actionFailed,
+  dismissActionError
 } = uiSlice.actions
 export default uiSlice.reducer

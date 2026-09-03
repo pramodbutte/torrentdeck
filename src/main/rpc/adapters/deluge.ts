@@ -89,7 +89,8 @@ export class DelugeAdapter implements TorrentClient {
       idleSeedingLimit: false, // no idle-based seeding stop
       totalSeedTimeLimit: false, // seed_time_limit has no clear enable toggle; not exposed
       seedLimitAction: true, // remove_seed_at_ratio → pause/remove when ratio is hit
-      seedLimitActionDelete: false // remove from session, no data delete
+      seedLimitActionDelete: false, // remove from session, no data delete
+      findData: false // core.move_storage always moves the files
     }
     // Only cache once the probe actually succeeded, so a failure while the
     // server is briefly unreachable doesn't pin `labels:false` forever.

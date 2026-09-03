@@ -66,6 +66,10 @@ export interface Capabilities {
   seedLimitAction: boolean
   /** Seeding action can also delete downloaded data (qBittorrent). */
   seedLimitActionDelete: boolean
+  /** "Find data": re-point a torrent at files that already exist at another
+   *  path WITHOUT moving anything (Transmission `torrent-set-location` with
+   *  move=false). Deluge and qBittorrent can only move. */
+  findData: boolean
 }
 
 /**

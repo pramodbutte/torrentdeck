@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { Torrent } from '@shared/transmission'
 import { TorrentStatus } from '@shared/transmission'
-import { filterTorrents, sortTorrents, deriveSidebar, statusColor, progressFillColor } from './derive'
+import {
+  filterTorrents,
+  sortTorrents,
+  deriveSidebar,
+  statusColor,
+  statusText,
+  statusTitle,
+  progressFillColor
+} from './derive'
 
 function torrent(partial: Partial<Torrent>): Torrent {
   return {
@@ -146,5 +154,26 @@ describe('progressFillColor', () => {
   it('clamps out-of-range input', () => {
     expect(progressFillColor(-1)).toBe('hsl(20 90% 42%)')
     expect(progressFillColor(2)).toBe('hsl(60 90% 52%)')
+  })
+})
+
+describe('statusText / statusTitle', () => {
+  const NO_DATA =
+    'No data found! Ensure your drives are connected or use "Set Location". To re-download, remove the torrent and re-add it.'
+
+  it('shows the daemon error text as the status and exposes it in full as the title', () => {
+    const t = torrent({ status: TorrentStatus.Stopped, error: 3, errorString: NO_DATA })
+    expect(statusText(t)).toBe(NO_DATA)
+    expect(statusTitle(t)).toBe(NO_DATA)
+  })
+
+  it('falls back to "Error" when the daemon gives no text, with no title', () => {
+    const t = torrent({ error: 3, errorString: '' })
+    expect(statusText(t)).toBe('Error')
+    expect(statusTitle(t)).toBeUndefined()
+  })
+
+  it('has no title for healthy torrents', () => {
+    expect(statusTitle(torrent({ status: TorrentStatus.Seeding }))).toBeUndefined()
   })
 })

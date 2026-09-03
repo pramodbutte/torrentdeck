@@ -7,6 +7,7 @@ import { useShortcuts } from '@/app/useShortcuts'
 import { Toolbar } from '@/components/Toolbar'
 import { Workspace } from '@/components/workspace/Workspace'
 import { StatusBar } from '@/components/StatusBar'
+import { ActionErrorNotice } from '@/components/ActionErrorNotice'
 import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { AddTorrentDialog } from '@/components/dialogs/AddTorrentDialog'
 import { ProfileDialog } from '@/components/dialogs/ProfileDialog'
@@ -105,6 +106,7 @@ export default function App(): React.JSX.Element {
           <Toolbar />
           <Workspace />
           <StatusBar />
+          <ActionErrorNotice />
         </>
       ) : (
         <WelcomeScreen />

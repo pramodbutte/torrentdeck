@@ -200,3 +200,12 @@ export function statusText(t: Torrent): string {
       return 'Unknown'
   }
 }
+
+/**
+ * Hover text for a status cell: the daemon's FULL error message when the
+ * torrent is in an error state (list cells truncate it, and e.g. Transmission's
+ * "No data found! …" text carries the fix instructions), otherwise nothing.
+ */
+export function statusTitle(t: Torrent): string | undefined {
+  return t.error !== 0 && t.errorString ? t.errorString : undefined
+}

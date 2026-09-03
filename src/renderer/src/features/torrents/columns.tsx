@@ -6,7 +6,7 @@
  */
 import type { ColumnKey, SortKey } from '@shared/types'
 import type { Torrent } from '@shared/transmission'
-import { availTextClass, progressFillColor, statusColor, statusText } from './derive'
+import { availTextClass, progressFillColor, statusColor, statusText, statusTitle } from './derive'
 import { formatBytes, formatDate, formatEta, formatPercent, formatRatio, formatSpeed } from '@/lib/format'
 
 export interface ColumnDef {
@@ -81,7 +81,11 @@ export const COLUMNS: Record<ColumnKey, ColumnDef> = {
     track: '96px',
     align: 'left',
     sortKey: 'status',
-    cell: (t) => <span className={`truncate ${statusColor(t).text}`}>{statusText(t)}</span>
+    cell: (t) => (
+      <span className={`truncate ${statusColor(t).text}`} title={statusTitle(t)}>
+        {statusText(t)}
+      </span>
+    )
   },
   downSpeed: {
     key: 'downSpeed',

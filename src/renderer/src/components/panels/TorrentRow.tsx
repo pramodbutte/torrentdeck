@@ -9,6 +9,7 @@ import {
   progressFillColor,
   statusColor,
   statusText,
+  statusTitle,
   swarmHealthClass
 } from '@/features/torrents/derive'
 import {
@@ -92,7 +93,9 @@ function RowStats({ torrent }: { torrent: Torrent }): React.JSX.Element {
     <span className="flex items-center gap-2 truncate text-xs text-surface-500 dark:text-surface-400">
       <span className="truncate">
         {before.join(' · ')} ·{' '}
-        <span className={statusColor(torrent).text}>{statusText(torrent)}</span>
+        <span className={statusColor(torrent).text} title={statusTitle(torrent)}>
+          {statusText(torrent)}
+        </span>
         {after.length ? ` · ${after.join(' · ')}` : ''}
       </span>
       {torrent.leftUntilDone > 0 && torrent.availRatio < 1 && (

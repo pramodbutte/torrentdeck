@@ -73,7 +73,8 @@ export class QbittorrentAdapter implements TorrentClient {
         idleSeedingLimit: true, // max_inactive_seeding_time
         totalSeedTimeLimit: true, // max_seeding_time
         seedLimitAction: true, // max_ratio_act (0 pause / 1 remove)
-        seedLimitActionDelete: false // delete-files enum value unverified; deferred
+        seedLimitActionDelete: false, // delete-files enum value unverified; deferred
+        findData: false // /torrents/setLocation always moves the files
       }
     })
   }

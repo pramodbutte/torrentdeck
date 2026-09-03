@@ -3,7 +3,9 @@ import reducer, {
   openAddTorrent,
   closeAddTorrent,
   addMagnets,
-  removeMagnet
+  removeMagnet,
+  actionFailed,
+  dismissActionError
 } from './uiSlice'
 
 const A = 'magnet:?xt=urn:btih:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&dn=A'
@@ -55,5 +57,21 @@ describe('Add-dialog magnet accumulation', () => {
   it('closing clears the batch', () => {
     const s = run([openAddTorrent({ magnet: A }), closeAddTorrent()])
     expect(s.addTorrent).toBeNull()
+  })
+})
+
+describe('action-error notice', () => {
+  it('starts empty and keeps only the latest failure', () => {
+    expect(run([]).actionError).toBeNull()
+    const s = run([
+      actionFailed({ message: 'Pause failed on NAS: boom', at: 1 }),
+      actionFailed({ message: 'Verify local data failed on NAS: nope', at: 2 })
+    ])
+    expect(s.actionError).toEqual({ message: 'Verify local data failed on NAS: nope', at: 2 })
+  })
+
+  it('dismiss clears it', () => {
+    const s = run([actionFailed({ message: 'x', at: 1 }), dismissActionError()])
+    expect(s.actionError).toBeNull()
   })
 })

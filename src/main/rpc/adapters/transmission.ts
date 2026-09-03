@@ -66,7 +66,8 @@ export class TransmissionAdapter implements TorrentClient {
         idleSeedingLimit: true, // idle-seeding-limit(-enabled)
         totalSeedTimeLimit: false, // no total seeding-time limit
         seedLimitAction: false, // ratio/idle limit only pauses
-        seedLimitActionDelete: false
+        seedLimitActionDelete: false,
+        findData: true // torrent-set-location with move=false re-points without moving
       }
     }
   }

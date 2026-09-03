@@ -3,7 +3,12 @@ import { Pencil } from 'lucide-react'
 import type { TorrentDetail } from '@shared/transmission'
 import { useAppDispatch } from '@/app/hooks'
 import { openRename } from '@/features/ui/uiSlice'
-import { useSetTorrentMutation, useSetLocationMutation } from '@/services/rpcApi'
+import {
+  useSetTorrentMutation,
+  useSetLocationMutation,
+  useTorrentActionMutation
+} from '@/services/rpcApi'
+import { can, useServerCapabilities } from '@/features/connection/useCapabilities'
 import { statusText } from '@/features/torrents/derive'
 import { formatBytes, formatDate, formatEta, formatPercent, formatRatio } from '@/lib/format'
 import { Input, Field } from '@/components/ui/input'
@@ -32,6 +37,8 @@ export function GeneralTab({
   const dispatch = useAppDispatch()
   const [setTorrent] = useSetTorrentMutation()
   const [setLocation] = useSetLocationMutation()
+  const [torrentAction] = useTorrentActionMutation()
+  const caps = useServerCapabilities(profileId)
   const [labelsDraft, setLabelsDraft] = useState(torrent.labels.join(', '))
   const [locationDraft, setLocationDraft] = useState(torrent.downloadDir)
 
@@ -46,10 +53,32 @@ export function GeneralTab({
     void setTorrent({ profileId, ids: [torrent.id], fields: { labels } })
   }
 
+  const locationChanged = Boolean(locationDraft) && locationDraft !== torrent.downloadDir
+
   const moveData = (): void => {
-    if (locationDraft && locationDraft !== torrent.downloadDir) {
+    if (locationChanged) {
       void setLocation({ profileId, ids: [torrent.id], location: locationDraft, move: true })
     }
+  }
+
+  /**
+   * "Find data": the files already live at the new path, so re-point the
+   * torrent there without moving anything, then re-check them. This is the
+   * fix for Transmission's "No data found" error (drive unmounted, folder
+   * moved); verify alone is a no-op there on 4.0.x because the daemon skips
+   * the check while it sees no files. A failure in either step surfaces
+   * through the action-error notice.
+   */
+  const findData = async (): Promise<void> => {
+    if (!locationChanged) return
+    const res = await setLocation({
+      profileId,
+      ids: [torrent.id],
+      location: locationDraft,
+      move: false
+    })
+    if ('error' in res) return
+    void torrentAction({ profileId, action: 'torrent-verify', ids: [torrent.id] })
   }
 
   return (
@@ -113,12 +142,29 @@ export function GeneralTab({
           <Button
             variant="secondary"
             size="sm"
-            disabled={locationDraft === torrent.downloadDir}
+            disabled={!locationChanged}
             onClick={moveData}
+            title="Move the downloaded files to this folder"
           >
             Move
           </Button>
+          {can(caps, 'findData') && (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!locationChanged}
+              onClick={() => void findData()}
+              title="The files are already in this folder: point the torrent there and verify them (nothing is moved)"
+            >
+              Find data
+            </Button>
+          )}
         </div>
+        {torrent.error !== 0 && can(caps, 'findData') && (
+          <span className="block text-[11px] text-surface-500 dark:text-surface-400">
+            Files elsewhere? Enter their folder and use <b>Find data</b>, then start the torrent.
+          </span>
+        )}
       </Field>
 
       <Field label="Labels (comma separated)">
