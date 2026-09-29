@@ -53,6 +53,17 @@ if [ "$PLATFORM" = mac ] || [ "$PLATFORM" = all ]; then
   : "${APPLE_ID:?Set APPLE_ID in .env.release (needed to notarize macOS)}"
   : "${APPLE_APP_SPECIFIC_PASSWORD:?Set APPLE_APP_SPECIFIC_PASSWORD in .env.release}"
   : "${APPLE_TEAM_ID:?Set APPLE_TEAM_ID in .env.release}"
+  # Fail fast (seconds, not after a full build): a 401 here means the app-specific
+  # password was revoked — Apple revokes them all when the Apple ID password changes.
+  echo "▸ checking Apple notarization credentials"
+  if ! xcrun notarytool history --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+        --team-id "$APPLE_TEAM_ID" >/dev/null 2>&1; then
+    echo "✗ Apple rejected the notarization credentials (notarytool HTTP 401)." >&2
+    echo "  Generate a new app-specific password at https://account.apple.com" >&2
+    echo "  (Sign-In and Security → App-Specific Passwords), set it as" >&2
+    echo "  APPLE_APP_SPECIFIC_PASSWORD in .env.release, and re-run." >&2
+    exit 1
+  fi
 fi
 
 # 3) Pre-create the draft release so multi-arch publishers attach to one release
