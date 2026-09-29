@@ -29,6 +29,9 @@ elsewhere (your NAS, a seedbox, another machine, or localhost).
 
 ## Requirements
 
+**Desktop:** macOS 13 Ventura or newer (Apple Silicon), Windows 10/11 (x64 or arm64), or
+Linux x64 (AppImage or .deb).
+
 You need a running daemon to connect to:
 
 - **Transmission 4.0+** with its RPC enabled (default port `9091`, path `/transmission/rpc`).

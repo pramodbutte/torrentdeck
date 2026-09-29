@@ -88,6 +88,11 @@ for updates…**).
   log (`~/Library/Logs/TorrentDeck/main.log`, etc.).
 - macOS auto-update requires the app be **signed** (it is) and the release contain the
   **`.zip`** (electron-updater updates from the zip, not the dmg) — both are shipped.
+- **Minimum macOS in the manifest** — Electron 44+ needs macOS 13. electron-builder does not
+  write that into `latest-mac.yml`, so `scripts/release.sh mac` patches
+  `minimumSystemVersion: 22.0.0` (Darwin kernel version for macOS 13) into it after publishing;
+  electron-updater then skips the update on older macOS instead of installing an app that
+  cannot launch. Before publishing, confirm the draft's `latest-mac.yml` has the field.
 
 ## Linux AppImage
 

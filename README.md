@@ -5,7 +5,7 @@
 **One desktop app for all your torrent servers.** TorrentDeck manages
 [Transmission](https://transmissionbt.com), [Deluge](https://deluge-torrent.org), and
 [qBittorrent](https://www.qbittorrent.org), **several servers at once, side by side** in
-one rearrangeable, color-coded dashboard on macOS (Apple Silicon), Windows, and Linux.
+one rearrangeable, color-coded dashboard on macOS 13+ (Apple Silicon), Windows, and Linux.
 
 Mix a Transmission NAS, a Deluge seedbox, and a local qBittorrent in the same window; each
 server shows only the controls it actually supports. If you're looking for a

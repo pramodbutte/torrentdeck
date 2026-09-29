@@ -59,6 +59,26 @@ case "$PLATFORM" in
   *)   npx electron-builder --"$PLATFORM" --publish always ;;
 esac
 
+# 4) macOS: Electron 44+ needs macOS 13 (Darwin 22). electron-builder does not put
+#    that into latest-mac.yml, and electron-updater only skips an update when the
+#    manifest carries `minimumSystemVersion` (a Darwin kernel version, per
+#    os.release()), so patch it in after publishing — otherwise Monterey installs
+#    would download a 0.1.9+ update that cannot launch.
+MAC_MIN_DARWIN="${MAC_MIN_DARWIN:-22.0.0}"
+if [ "$PLATFORM" = mac ] || [ "$PLATFORM" = all ]; then
+  tmp="$(mktemp -d)"
+  gh release download "$TAG" --repo "$REPO" --pattern latest-mac.yml --dir "$tmp"
+  node -e '
+    const fs = require("node:fs"), yaml = require("js-yaml")
+    const [file, min] = process.argv.slice(1)
+    const doc = yaml.load(fs.readFileSync(file, "utf8"))
+    doc.minimumSystemVersion = min
+    fs.writeFileSync(file, yaml.dump(doc, { lineWidth: -1 }))
+  ' "$tmp/latest-mac.yml" "$MAC_MIN_DARWIN"
+  gh release upload "$TAG" "$tmp/latest-mac.yml" --repo "$REPO" --clobber
+  echo "▸ latest-mac.yml: minimumSystemVersion=$MAC_MIN_DARWIN (macOS 13+)"
+fi
+
 echo
 echo "✓ '$PLATFORM' published to the $TAG draft release. Review + publish it:"
 echo "  https://github.com/$REPO/releases/tag/$TAG"
