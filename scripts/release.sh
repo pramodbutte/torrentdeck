@@ -14,6 +14,20 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# node/npm come from nvm and may be missing from a fresh terminal's PATH — load
+# nvm's default version if needed so this script works from any shell.
+if ! command -v node >/dev/null 2>&1; then
+  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    set +u
+    # shellcheck disable=SC1091
+    . "$NVM_DIR/nvm.sh" >/dev/null 2>&1 || true
+    nvm use default >/dev/null 2>&1 || true
+    set -u
+  fi
+fi
+command -v node >/dev/null 2>&1 || { echo "✗ node not found on PATH. Install Node via nvm, or run 'nvm use' first." >&2; exit 1; }
+
 REPO=pramodbutte/torrentdeck
 
 # 1) Load creds from the persistent, git-ignored file (if present).
