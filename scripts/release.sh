@@ -14,7 +14,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-REPO=pramod-bls/torrentdeck
+REPO=pramodbutte/torrentdeck
 
 # 1) Load creds from the persistent, git-ignored file (if present).
 if [ -f .env.release ]; then
