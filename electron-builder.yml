@@ -51,6 +51,9 @@ linux:
   target:
     - AppImage
     - deb
+  # Static-runtime AppImage toolset (AppImage type2-runtime 20251108). The
+  # default "0.0.0" legacy runtime needs libfuse2 on the host, which Ubuntu
+  # 22.04+/Fedora no longer ship, so the AppImage would fail to launch there.
   desktop:
     entry:
       MimeType: x-scheme-handler/magnet;application/x-bittorrent;
@@ -59,5 +62,12 @@ nsis:
   deleteAppDataOnUninstall: false
 publish:
   provider: github
-  owner: pramod-bls
+  owner: pramodbutte
   repo: torrentdeck
+# See the `linux:` comment above — static (no libfuse2) AppImage runtime.
+toolsets:
+  appimage: "1.0.3"
+# Embeds AppImageUpdate update info in the AppImage and publishes the .zsync
+# next to it (build/appimageUpdateInfo.cjs). No-ops for mac/win artifacts.
+artifactBuildCompleted: build/appimageUpdateInfo.cjs
+afterAllArtifactBuild: build/appimageUpdateInfo.cjs

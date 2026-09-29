@@ -9,6 +9,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to the GitHub release (off = build only; artifacts attached to the run)'
+        type: boolean
+        default: true
 
 # electron-builder needs to create/upload the GitHub release with GITHUB_TOKEN.
 permissions:
@@ -27,11 +32,28 @@ jobs:
 
       - run: npm ci
 
+      # zsyncmake is used by build/appimageUpdateInfo.cjs to publish the
+      # AppImageUpdate .zsync file next to the AppImage.
+      - run: sudo apt-get update && sudo apt-get install -y zsync
+
       - run: npm run typecheck
 
       - run: npm test
 
+      # Manual runs can untick `publish` to dry-run the build (toolset download,
+      # AppImage update-info hook, zsyncmake) without touching any release.
       - name: Build and publish (Linux)
-        run: npx electron-vite build && npx electron-builder --linux --publish always
+        run: npx electron-vite build && npx electron-builder --linux --publish ${{ github.event_name == 'workflow_dispatch' && !inputs.publish && 'never' || 'always' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts (dry run only)
+        if: github.event_name == 'workflow_dispatch' && !inputs.publish
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            dist/*.AppImage
+            dist/*.AppImage.zsync
+            dist/*.deb
+          if-no-files-found: error

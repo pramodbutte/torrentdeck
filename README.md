@@ -145,7 +145,7 @@ everything publishes to one GitHub Release that the in-app auto-updater consumes
 npm version <ver> --no-git-tag-version && git commit -am "chore(release): <ver>" && git push
 scripts/release.sh mac && scripts/release.sh win     # signed/notarized mac + win → draft
 git tag v<ver> && git push origin v<ver>             # Linux via CI → same release
-gh release edit v<ver> --repo pramod-bls/torrentdeck --draft=false --latest
+gh release edit v<ver> --repo pramodbutte/torrentdeck --draft=false --latest
 ```
 
 Full procedure, platform/signing matrix, auto-update details, and troubleshooting:

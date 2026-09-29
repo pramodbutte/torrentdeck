@@ -10,10 +10,10 @@
     "email": "pramod.butte@gmail.com"
   },
   "license": "GPL-2.0-or-later",
-  "homepage": "https://github.com/pramod-bls/torrentdeck",
+  "homepage": "https://github.com/pramodbutte/torrentdeck",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pramod-bls/torrentdeck.git"
+    "url": "https://github.com/pramodbutte/torrentdeck.git"
   },
   "scripts": {
     "dev": "electron-vite dev",

@@ -1,6 +1,6 @@
 /**
  * Auto-update via electron-updater, reading published GitHub releases (see the
- * `publish` block in electron-builder.yml → pramod-bls/torrentdeck). Each
+ * `publish` block in electron-builder.yml → pramodbutte/torrentdeck). Each
  * release's `latest*.yml` + installer/blockmap is produced by
  * `electron-builder --publish always`. No dedicated update server is needed —
  * the public GitHub release *is* the backend.

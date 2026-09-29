@@ -49,10 +49,12 @@ scripts/release.sh win      # NSIS x64/arm64
 
 # 3. Build + publish Linux via CI (needs a Linux host)
 git tag v<new-version> && git push origin v<new-version>
-#   — or, without moving the tag:  gh workflow run "Release (Linux)" --repo pramod-bls/torrentdeck
+#   — or, without moving the tag:  gh workflow run "Release (Linux)" --repo pramodbutte/torrentdeck
+#   — dry run (build only, no release touched; artifacts attached to the run):
+#       gh workflow run "Release (Linux)" --repo pramodbutte/torrentdeck -f publish=false
 
 # 4. Review the draft, then publish it as the latest release
-gh release edit v<new-version> --repo pramod-bls/torrentdeck --draft=false --latest
+gh release edit v<new-version> --repo pramodbutte/torrentdeck --draft=false --latest
 #   (add notes with --notes-file first if you like)
 ```
 
@@ -71,12 +73,12 @@ for updates…**).
 | --- | --- | --- | --- |
 | macOS (arm64 only — Apple Silicon) | `.dmg`, `.zip` (+ blockmaps), `latest-mac.yml` | Developer ID **signed + notarized** | ✅ (updates from the `.zip`) |
 | Windows (x64 + arm64) | `TorrentDeck-Setup-*.exe` (+ blockmap), `latest.yml` | unsigned (SmartScreen warns) | ✅ |
-| Linux | `.AppImage`, `.deb`, `latest-linux.yml` | unsigned | AppImage ✅ · **deb: manual** (apt/dpkg) |
+| Linux (x64) | `.AppImage` (+ `.AppImage.zsync`), `.deb`, `latest-linux.yml` | unsigned | AppImage ✅ (electron-updater, and AppImageUpdate via the zsync) · **deb: manual** (apt/dpkg) |
 
 ## Auto-update
 
 - Config: the `publish` block in `electron-builder.yml` (`provider: github`,
-  `owner: pramod-bls`, `repo: torrentdeck`) is baked into `app-update.yml` in the packaged
+  `owner: pramodbutte`, `repo: torrentdeck`) is baked into `app-update.yml` in the packaged
   app. Public repo → clients need no token.
 - Behavior (`src/main/updater.ts`): checks **on launch**, **every 6 h**, and **manually**
   from the Settings menu. Background checks are silent unless an update is found; a downloaded
@@ -86,6 +88,27 @@ for updates…**).
   log (`~/Library/Logs/TorrentDeck/main.log`, etc.).
 - macOS auto-update requires the app be **signed** (it is) and the release contain the
   **`.zip`** (electron-updater updates from the zip, not the dmg) — both are shipped.
+
+## Linux AppImage
+
+- **Static runtime** — `toolsets.appimage: "1.0.3"` in `electron-builder.yml` builds the
+  AppImage on AppImage's static type2 runtime (20251108), so it runs without `libfuse2`
+  (Ubuntu 22.04+ and Fedora no longer ship it). Unset, electron-builder falls back to the
+  legacy FUSE2 runtime that the AppImage catalog flagged.
+- **AppImageUpdate support** — `build/appimageUpdateInfo.cjs` (hooked in as
+  `artifactBuildCompleted` + `afterAllArtifactBuild`) writes the update string
+  `gh-releases-zsync|<owner>|<repo>|latest|TorrentDeck-*.AppImage.zsync` into the runtime's
+  `.upd_info` ELF section, rebuilds the embedded blockmap so `latest-linux.yml` and
+  electron-updater's differential download stay correct, and publishes
+  `TorrentDeck-<ver>.AppImage.zsync` next to the AppImage. `zsyncmake` must be on PATH: CI
+  installs the `zsync` apt package; a local build without it fails only when `CI` is set,
+  otherwise it just skips the `.zsync`. `latest` in the update string means the latest
+  **non-draft, non-prerelease** release, so step 4 above is what makes a new version visible
+  to AppImageUpdate.
+- **AppImage catalog** — TorrentDeck is listed at https://appimage.github.io (entry
+  `data/TorrentDeck` in AppImage/appimage.github.io, added by PR #6455). Its checker always
+  flags Electron AppImages as "not self-contained" (they link the system glibc); that is
+  expected and not fixable.
 
 ## Gotchas (all hit and worked around)
 
@@ -98,7 +121,7 @@ for updates…**).
 - **Duplicate-draft race** — when no release exists, the mac dmg + zip publishers can each
   create a draft → two releases. **Resolution:** `scripts/release.sh` pre-creates the draft
   first. If you ever see two drafts, delete one with
-  `gh api -X DELETE repos/pramod-bls/torrentdeck/releases/<id>`.
+  `gh api -X DELETE repos/pramodbutte/torrentdeck/releases/<id>`.
 - **Linux `.deb` needs a maintainer** — `package.json` must have `author.email` (it does).
 - **CI publish 403** — the workflow sets `permissions: contents: write` so `GITHUB_TOKEN`
   can create/upload the release.
