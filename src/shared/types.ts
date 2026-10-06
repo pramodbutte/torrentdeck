@@ -268,7 +268,8 @@ export interface TorrentsPanelConfig {
 
 /** Per-instance configuration of a Speed Graph panel. */
 export interface SpeedGraphConfig {
-  server: 'default' | string
+  /** 'default' = every server; otherwise the ids plotted (one color per server). */
+  servers: 'default' | string[]
   windowSec: 60 | 300 | 900
 }
 

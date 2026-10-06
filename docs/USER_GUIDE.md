@@ -151,7 +151,7 @@ A fully-loaded workspace, with every control numbered:
 **Session stats & Speed graph**
 
 19. **Stats server** — which server the statistics are for.
-20. **Graph server** — which server the speed graph plots.
+20. **Graph servers** — which servers the speed graph plots: all, one, or any selection. Each server keeps its own color; download is a solid line with a soft fill, upload a dashed line.
 21. **Graph window** — the time span shown (1 / 5 / 15 min).
 
 **Status bar**

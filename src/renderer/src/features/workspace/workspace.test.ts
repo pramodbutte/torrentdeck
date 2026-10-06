@@ -171,7 +171,7 @@ describe('speed-graph config', () => {
       items: [{ i: 'g', type: 'speed-graph', x: 0, y: 0, w: 4, h: 6 }]
     }
     const cfg = normalizeLayout(layout)!.items[0].config as SpeedGraphConfig
-    expect(cfg).toEqual({ server: 'default', windowSec: 300 })
+    expect(cfg).toEqual({ servers: 'default', windowSec: 300 })
   })
 
   it('rejects invalid window values back to default', () => {
@@ -181,6 +181,15 @@ describe('speed-graph config', () => {
     }
     const cfg = normalizeLayout(layout)!.items[0].config as SpeedGraphConfig
     expect(cfg.windowSec).toBe(300)
+  })
+
+  it('migrates the legacy single-server config', () => {
+    const layout = {
+      version: CURRENT_LAYOUT_VERSION,
+      items: [{ i: 'g', type: 'speed-graph', x: 0, y: 0, w: 4, h: 6, config: { server: 'p1' } }]
+    }
+    const cfg = normalizeLayout(layout)!.items[0].config as SpeedGraphConfig
+    expect(cfg.servers).toEqual(['p1'])
   })
 })
 

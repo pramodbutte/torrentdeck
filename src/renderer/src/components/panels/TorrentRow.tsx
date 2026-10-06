@@ -223,7 +223,9 @@ export function TorrentRowShell({
             'border-b border-surface-100 dark:border-surface-800',
             reorder && 'cursor-grab active:cursor-grabbing',
             reorder?.isDropTarget && 'border-t-2 border-t-accent-500',
-            selected ? 'bg-accent-50 dark:bg-accent-950/40' : 'hover:bg-surface-50 dark:hover:bg-surface-800/50',
+            selected
+              ? 'bg-accent-100 shadow-[inset_0_0_0_1px_var(--color-accent-300)] dark:bg-accent-800/50 dark:shadow-[inset_0_0_0_1px_var(--color-accent-700)]'
+              : 'hover:bg-surface-50 dark:hover:bg-surface-800/50',
             className
           )}
         >

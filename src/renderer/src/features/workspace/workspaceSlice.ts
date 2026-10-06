@@ -16,6 +16,7 @@ import type {
   PanelTypeId,
   ServerProfile,
   SpeedGraphConfig,
+  StatsPanelConfig,
   TorrentsPanelConfig,
   WorkspaceItem,
   WorkspaceItemConfig,
@@ -72,7 +73,7 @@ const workspaceSlice = createSlice({
       state,
       action: PayloadAction<{
         id: string
-        patch: Partial<TorrentsPanelConfig> | Partial<SpeedGraphConfig>
+        patch: Partial<TorrentsPanelConfig> | Partial<SpeedGraphConfig> | Partial<StatsPanelConfig>
       }>
     ) {
       if (!state.layout) return

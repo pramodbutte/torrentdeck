@@ -180,7 +180,7 @@ function isValidItem(raw: unknown): raw is WorkspaceItem {
 }
 
 export function defaultGraphConfig(): SpeedGraphConfig {
-  return { server: 'default', windowSec: 300 }
+  return { servers: 'default', windowSec: 300 }
 }
 
 export function defaultStatsConfig(): StatsPanelConfig {
@@ -210,9 +210,12 @@ export function panelServerIds(
       const cfg = getListConfig(item)
       return keep(cfg.servers === 'default' ? allProfileIds : cfg.servers)
     }
-    case 'stats':
     case 'speed-graph': {
-      const server = item.type === 'stats' ? getStatsConfig(item).server : getGraphConfig(item).server
+      const cfg = getGraphConfig(item)
+      return keep(cfg.servers === 'default' ? allProfileIds : cfg.servers)
+    }
+    case 'stats': {
+      const server = getStatsConfig(item).server
       return keep([server === 'default' ? allProfileIds[0] : server])
     }
     case 'detail':
@@ -241,11 +244,18 @@ export function getGraphConfig(item: WorkspaceItem): SpeedGraphConfig {
 function withConfig(item: WorkspaceItem, seedSort?: SortPref): WorkspaceItem {
   if (item.type === 'speed-graph') {
     const base = defaultGraphConfig()
-    const cfg = (item.config ?? {}) as Partial<SpeedGraphConfig>
+    // `server` is the pre-multi-server shape: one id → that single server.
+    const cfg = (item.config ?? {}) as Partial<SpeedGraphConfig> & { server?: string }
+    const servers =
+      Array.isArray(cfg.servers) && cfg.servers.every((x) => typeof x === 'string') && cfg.servers.length
+        ? cfg.servers
+        : typeof cfg.server === 'string' && cfg.server !== 'default'
+          ? [cfg.server]
+          : base.servers
     return {
       ...item,
       config: {
-        server: typeof cfg.server === 'string' ? cfg.server : base.server,
+        servers,
         windowSec: cfg.windowSec === 60 || cfg.windowSec === 900 ? cfg.windowSec : base.windowSec
       }
     }
